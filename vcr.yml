@@ -1,0 +1,15 @@
+project:
+    name: helloworld
+instance:
+    name: dev
+    runtime: nodejs18
+    region: aws.euw1
+    application-id: 78418210-7bbf-4c8e-930e-b3c42d4feae3
+    entrypoint: [node, index.js]
+    environment:
+        - name: ENV_VAR
+          value: "helloworld"
+debug:
+    name: debug
+    application-id: 78418210-7bbf-4c8e-930e-b3c42d4feae3
+    entrypoint: [nodemon, --inspect, index.js]
