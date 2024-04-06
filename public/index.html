@@ -2,11 +2,135 @@
 <html lang = "en">
   <head>
     <meta charset = "UTF-8">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-GLhlTQ8iRABdZLl6O3oVMWSktQOp6b7In1Zl3/Jr59b6EGGoI1aFkw7cmDA6j6gD" crossorigin="anonymous">
-    <link rel="stylesheet" href="styles.css">
-    <title> VCR Static Site </title>
+    <script src="https://static.opentok.com/v1/js/video-express.js"></script>
+    <link href="./video-express-styles.css" rel="stylesheet" media="screen" charset="UTF-8">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          spacing: {
+            '1': '8px',
+            '2': '12px'
+          }
+        }
+      }
+    </script>
+    <title> Vonage Video Express </title>
   </head>
   <body class="center">
-    <h1> Hello from Vonage Cloud Runtime </h1>
+    <div class="m-2">
+      <label htmlFor="inline-last-name" class="p-2">お名前:
+        <input id="userName" class="bg-gray-200 p-1" type="text" defaultValue="" placeholder="お名前" />
+      </label>
+      <button id="btnJoin" class="text-white font-bold bg-blue-400 p-2 rounded" onclick="join()">会議に参加</button>
+      <button id="btnLeave" class="text-white font-bold bg-red-400 p-2 rounded" onclick="leave()" hidden>退出</button>
+    </div>
+    <div id="roomContainer"></div>
+
+    <script>
+      // Camera and Mic devices capture
+      let audioInputs;
+      let videoInputs;
+      let currentAudioIndex;
+      let currentVideoIndex;
+
+      VideoExpress.getDevices((err, devices) => {
+        audioInputs = devices.filter((device) => device.kind === 'audioInput');
+        // Find the right starting index for cycleMicrophone
+        audioInputs.forEach((device, index) => {
+          console.log(`🐞 audioInputDevice: ${device.label}`)
+          if (device.label === previewPublisher.getAudioSource().label) {
+            currentAudioIndex = index;
+          }
+        });
+        videoInputs = devices.fileter((device) => device.kind === 'videoInput');
+        videoInputs.forEach((device, index) => {
+          console.log(`🐞 videoInputDevice: ${device.label}`)
+        });
+
+        currentAudioIndex = devices
+          // Get all video inputs
+          .filter((device) => device.kind === 'audioInput')
+          // Find the right starting index for cycleMicrophone
+          .findIndex((device) => device.label === previewPublisher.getAudioSource().label);
+
+        currentVideoIndex = devices
+          // Get all video inputs
+          .filter((device) => device.kind === 'videoInput')
+          // Find the right starting index for cycleCamera
+          .findIndex((device) => device.label === previewPublisher.getVideoDevice().label);
+      });
+
+      const cycleMicrophone = () => {
+        currentAudioIndex += 1;
+        let deviceId = audioInputs[currentAudioIndex % audioInputs.length].deviceId;
+        previewPublisher.setAudioSource(deviceId);
+      };
+
+      const cycleCamera = () => {
+        currentVideoIndex += 1;
+        let deviceId = videoInputs[currentVideoIndex % videoInputs.length].deviceId;
+        previewPublisher.setVideoSource(deviceId);
+      };
+
+      let room = null
+      let userName = document.getElementById('userName')
+      const btnJoin = document.getElementById('btnJoin')
+      const btnLeave = document.getElementById('btnLeave')
+      const join = async () => {
+        if (!userName.value) {
+          alert('お名前を登録してください。')
+          return false
+        }
+        btnJoin.disabled = true
+        try {
+          const response = await fetch('/token', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({'userName': userName.value})
+          })
+          const json = await response.json()
+          console.log(`🐞 response: ${JSON.stringify(json, null, '\t')}`)
+
+          // Join room
+          room = new VideoExpress.Room({
+            apiKey: json.apiKey,
+            sessionId: json.sessionId,
+            token: json.token,
+            roomContainer: 'roomContainer',
+            managedLayoutOptions: {
+              layoutMode: 'mobile'
+            }
+          });
+          room.join();
+          
+          room.on('connected', () => {
+            console.log(`🐞 Connected.`)
+            btnJoin.hidden = true
+            btnJoin.disabled = false
+            btnLeave.hidden = false
+          })
+          room.on('disconnected', (reason) => {
+          console.log(`🐞 Disconnected. ${reason}`)
+          })
+        } catch(error) {
+          btnJoin.hidden = true
+          btnJoin.disabled = false
+          btnLeave.hidden = false
+          alert(error.message)
+          return false
+        }
+      }
+      const leave = async () => {
+        // Leave room
+        room.leave()
+        btnJoin.hidden = false
+        btnJoin.disabled = false
+        btnLeave.hidden = true
+        document.getElementById('layoutContainerWrapper').remove()        
+      }
+    </script>
   </body>
 </html>

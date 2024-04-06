@@ -1,5 +1,5 @@
 {
-  "name": "helloworld",
+  "name": "vonage-video-express",
   "type": "module",
   "version": "1.0.0",
   "description": "",
@@ -11,8 +11,9 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@vonage/auth": "^1.10.0",
     "@vonage/server-sdk": "^3.12.2",
     "@vonage/vcr-sdk": "1.2.0",
-    "express": "4.18.2"
+    "express": "^4.19.2"
   }
 }
