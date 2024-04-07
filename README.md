@@ -1,19 +1,20 @@
-# VCR Starter Project
+# Vonage Video Express with Vonage Cloud Runtime
 
-This project is a starting off point to help you build a Vonage Cloud Runtime application. 
+Vonage Video Express のデモを Vonage Cloud Runtime(VCR) 上で実行します。
 
-To start debugging the project, open the "Run and Debug" menu on the left side. Then start the debugger by clicking the play button.
+## セットアップ
 
-![Starting the debugger in the online workspace](debug.png)
+VCRに接続します。
 
-To open the project in your browser in the bottom panel, open the "Terminal" tab then open the debug link.
+github のリモートレポジトリを以下のレポジトリに変更します。
 
-![Opening the project link in the online workspace](cc.png)
+`https://github.com/mobilebiz/vonage-video-express.git`
 
-If you would like to deploy your project, in the bottom panel open the "Terminal" tab and run the deploy command
+ターミナルを起動します。
 
-```
+```sh
+git pull
+cd vonage-video-express
+npm install
 vcr deploy
 ```
-
-View the [deploying guide](https://developer.vonage.com/vcr/guides/deploying) to learn more about deploying on Vonage Cloud Runtime.
