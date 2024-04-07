@@ -3,7 +3,43 @@
   <head>
     <meta charset = "UTF-8">
     <script src="https://static.opentok.com/v1/js/video-express.js"></script>
-    <link href="./video-express-styles.css" rel="stylesheet" media="screen" charset="UTF-8">
+    <style>
+      body {
+          margin: 0;
+      }        
+      /* Assuming the name of the PreviewPublisher's container is previewContainer */
+      #previewContainer {
+          display: flex;
+          flex-direction: column-reverse;
+          align-items: center;
+          justify-content: flex-end;
+          border-color: black;
+          border-radius: 5px;
+          border-style: dashed;
+          width: 640px;
+          height: 480px;
+          padding: 20px;
+      }        
+      /* Assuming the name of the Room's container is roomContainer */
+      #roomContainer {
+          width: 100vw;
+          height: calc(100vh - 90px);
+          background-color: #ddd;
+          position: relative;
+      }
+      #roomContainer > .OT_publisher {
+          top: 25px;
+          right: 25px;
+          position: absolute;
+          border-radius: 10px;
+      }
+      #roomContainer > .OT_screenshare {
+          top: 25px;
+          left: 25px;
+          position: absolute;
+          border-radius: 10px;
+      }      
+    </style>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
       tailwind.config = {
@@ -15,68 +51,60 @@
         }
       }
     </script>
-    <title> Vonage Video Express </title>
-  </head>
-  <body class="center">
-    <div class="m-2">
-      <label htmlFor="inline-last-name" class="p-2">お名前:
-        <input id="userName" class="bg-gray-200 p-1" type="text" defaultValue="" placeholder="お名前" />
-      </label>
-      <button id="btnJoin" class="text-white font-bold bg-blue-400 p-2 rounded" onclick="join()">会議に参加</button>
-      <button id="btnLeave" class="text-white font-bold bg-red-400 p-2 rounded" onclick="leave()" hidden>退出</button>
-    </div>
-    <div id="roomContainer"></div>
-
     <script>
-      // Camera and Mic devices capture
       let audioInputs;
       let videoInputs;
-      let currentAudioIndex;
-      let currentVideoIndex;
+      let listMic;
+      let listCamera;
+      let currentAudioIndex = 0;
+      let currentVideoIndex = 0;
+      let userName;
+      let btnJoin;
+      let btnLeave;
 
-      VideoExpress.getDevices((err, devices) => {
-        audioInputs = devices.filter((device) => device.kind === 'audioInput');
-        // Find the right starting index for cycleMicrophone
-        audioInputs.forEach((device, index) => {
-          console.log(`🐞 audioInputDevice: ${device.label}`)
-          if (device.label === previewPublisher.getAudioSource().label) {
-            currentAudioIndex = index;
-          }
-        });
-        videoInputs = devices.fileter((device) => device.kind === 'videoInput');
-        videoInputs.forEach((device, index) => {
-          console.log(`🐞 videoInputDevice: ${device.label}`)
-        });
+      window.onload = async () => {
+        listCamera = document.getElementById('camera');
+        listMic = document.getElementById('mic');
+        userName = document.getElementById('userName')
+        btnJoin = document.getElementById('btnJoin')
+        btnLeave = document.getElementById('btnLeave')
+        
+        console.log(`🐞 Camera and Mic devices capture`)
+        // Camera and Mic devices capture
+  
+        try {
+          const devices = await VideoExpress.getDevices();
+          console.log(`🐞 devices: ${JSON.stringify(devices, null, '\t')}`)
+          audioInputs = devices.filter((device) => device.kind === 'audioInput');
+          audioInputs.forEach((device, index) => {
+            listMic.options.add(new Option(device.label, device.deviceId));
+            console.log(`🐞 audioInputDevice: ${device.label}`)
 
-        currentAudioIndex = devices
-          // Get all video inputs
-          .filter((device) => device.kind === 'audioInput')
-          // Find the right starting index for cycleMicrophone
-          .findIndex((device) => device.label === previewPublisher.getAudioSource().label);
-
-        currentVideoIndex = devices
-          // Get all video inputs
-          .filter((device) => device.kind === 'videoInput')
-          // Find the right starting index for cycleCamera
-          .findIndex((device) => device.label === previewPublisher.getVideoDevice().label);
-      });
-
-      const cycleMicrophone = () => {
-        currentAudioIndex += 1;
-        let deviceId = audioInputs[currentAudioIndex % audioInputs.length].deviceId;
-        previewPublisher.setAudioSource(deviceId);
+          });
+          videoInputs = devices.filter((device) => device.kind === 'videoInput');
+          videoInputs.forEach((device, index) => {
+            listCamera.options.add(new Option(device.label, device.deviceId));
+            console.log(`🐞 videoInputDevice: ${device.label}`)
+          });
+  
+            
+        } catch (error) {
+          console.error(`🐞 Error: ${error.message}`)        
+        }
+      }
+      const changeMic = async () => {
+        console.log(`🐞 changeMic ${listMic.value}`)
+        currentAudioIndex = listMic.selectedIndex;
+        if (room) room.camera.setAudioDevice(audioInputs[currentAudioIndex].deviceId)
       };
 
-      const cycleCamera = () => {
-        currentVideoIndex += 1;
-        let deviceId = videoInputs[currentVideoIndex % videoInputs.length].deviceId;
-        previewPublisher.setVideoSource(deviceId);
+      const changeCamera = async () => {
+        console.log(`🐞 changeCamera ${listCamera.value}`)
+        currentVideoIndex = listCamera.selectedIndex;
+        if (room) room.camera.setVideoDevice(videoInputs[currentVideoIndex].deviceId)
       };
 
       let room = null
-      let userName = document.getElementById('userName')
-      const btnJoin = document.getElementById('btnJoin')
-      const btnLeave = document.getElementById('btnLeave')
       const join = async () => {
         if (!userName.value) {
           alert('お名前を登録してください。')
@@ -104,16 +132,26 @@
               layoutMode: 'mobile'
             }
           });
-          room.join();
+          
+          // Join room
+          await room.join();
+          room.camera.setAudioDevice(audioInputs[currentAudioIndex].deviceId)
+          room.camera.setVideoDevice(videoInputs[currentVideoIndex].deviceId)
+          btnJoin.hidden = true
+          btnJoin.disabled = false
+          btnLeave.hidden = false
           
           room.on('connected', () => {
             console.log(`🐞 Connected.`)
-            btnJoin.hidden = true
-            btnJoin.disabled = false
-            btnLeave.hidden = false
+            // room.camera.setAudioDevice(audioInputs[currentAudioIndex].deviceId)
+            // room.camera.setVideoDevice(videoInputs[currentVideoIndex].deviceId)
+            // btnJoin.hidden = true
+            // btnJoin.disabled = false
+            // btnLeave.hidden = false
           })
+          
           room.on('disconnected', (reason) => {
-          console.log(`🐞 Disconnected. ${reason}`)
+            console.log(`🐞 Disconnected. ${reason}`)
           })
         } catch(error) {
           btnJoin.hidden = true
@@ -126,11 +164,33 @@
       const leave = async () => {
         // Leave room
         room.leave()
+        room = null
         btnJoin.hidden = false
         btnJoin.disabled = false
         btnLeave.hidden = true
         document.getElementById('layoutContainerWrapper').remove()        
       }
     </script>
+    <title> Vonage Video Express </title>
+  </head>
+  <body class="center">
+    <div class="m-2">
+      <label htmlFor="inline-last-name" class="p-2">お名前:
+        <input id="userName" class="bg-gray-200 p-1" type="text" defaultValue="" placeholder="お名前" />
+      </label>
+      <button id="btnJoin" class="text-white font-bold bg-blue-400 p-2 rounded" onclick="join()">会議に参加</button>
+      <button id="btnLeave" class="text-white font-bold bg-red-400 p-2 rounded" onclick="leave()" hidden>退出</button>
+    </div>
+    <div class="m-2">
+      <label htmlFor="camera" class="p-2">カメラ:
+        <select id="camera" class="bg-gray-200 p-1" onChange="changeCamera()" required>
+        </select>
+      </label>
+      <label htmlFor="mic" class="p-2">マイク:
+        <select id="mic" class="bg-gray-200 p-1" onChange="changeMic()" required>
+        </select>
+      </label>
+    </div>
+    <div id="roomContainer"></div>
   </body>
 </html>

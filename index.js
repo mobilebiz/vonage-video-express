@@ -3,6 +3,8 @@ import { Vonage } from "@vonage/server-sdk";
 import { vcr } from "@vonage/vcr-sdk";
 import express from 'express';
 import fs from 'fs'
+import * as dotenv from 'dotenv';
+dotenv.config();
 
 const app = express();
 const port = process.env.VCR_PORT;
