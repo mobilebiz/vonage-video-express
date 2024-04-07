@@ -141,15 +141,6 @@
           btnJoin.disabled = false
           btnLeave.hidden = false
           
-          room.on('connected', () => {
-            console.log(`🐞 Connected.`)
-            // room.camera.setAudioDevice(audioInputs[currentAudioIndex].deviceId)
-            // room.camera.setVideoDevice(videoInputs[currentVideoIndex].deviceId)
-            // btnJoin.hidden = true
-            // btnJoin.disabled = false
-            // btnLeave.hidden = false
-          })
-          
           room.on('disconnected', (reason) => {
             console.log(`🐞 Disconnected. ${reason}`)
           })

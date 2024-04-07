@@ -2,7 +2,10 @@
   "name": "vonage-video-express",
   "type": "module",
   "version": "1.0.0",
-  "description": "",
+  "description": "Vonage Video API with Express",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/mobilebiz/vonage-video-express.git"},
   "main": "index.js",
   "scripts": {
     "start": "node index.js",
